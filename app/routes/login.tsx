@@ -77,13 +77,14 @@ export const action: ActionFunction = async ({ request }) => {
       // login to get the user
       // if there's no user, return the fields and a formError
       const user = await login({ username, password });
-      console.log("user", user);
+
       if (!user) {
         return badRequest({
           fields,
           formError: `Username/Password combination incorrect`,
         });
       }
+
       // if there is a user, create their session and redirect to /jokes
       return createUserSession(user.id, redirectTo);
 
@@ -105,6 +106,8 @@ export const action: ActionFunction = async ({ request }) => {
           formError: `Something went wrong with the user`,
         });
       }
+
+      return createUserSession(newUser.id, redirectTo);
     default:
       return badRequest({ fields, formError: `Login type invalid` });
   }
