@@ -1,9 +1,10 @@
-import { LinksFunction, json, ActionFunction } from "@remix-run/node";
-import { useActionData, Link, useSearchParams } from "@remix-run/react";
+import type { ActionFunction, LinksFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useActionData, useSearchParams, Link } from "@remix-run/react";
 
 import { db } from "~/utils/db.server";
 import { createUserSession, login, register } from "~/utils/session.server";
-import stylesUrl from "../styles/login.css";
+import stylesUrl from "~/styles/login.css";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: stylesUrl }];
@@ -11,23 +12,21 @@ export const links: LinksFunction = () => {
 
 function validateUsername(username: unknown) {
   if (typeof username !== "string" || username.length < 3) {
-    return `Username must be at least 3 characters long`;
+    return `Usernames must be at least 3 characters long`;
   }
 }
 
 function validatePassword(password: unknown) {
   if (typeof password !== "string" || password.length < 6) {
-    return `Password must be at least 6 characters long`;
+    return `Passwords must be at least 6 characters long`;
   }
 }
 
 function validateUrl(url: any) {
-  console.log("url", url);
   let urls = ["/jokes", "/", "https://remix.run"];
   if (urls.includes(url)) {
     return url;
   }
-
   return "/jokes";
 }
 
@@ -52,64 +51,61 @@ export const action: ActionFunction = async ({ request }) => {
   const username = form.get("username");
   const password = form.get("password");
   const redirectTo = validateUrl(form.get("redirectTo") || "/jokes");
-
   if (
     typeof loginType !== "string" ||
     typeof username !== "string" ||
     typeof password !== "string" ||
     typeof redirectTo !== "string"
   ) {
-    return badRequest({ formError: `Form not submitted correctly` });
+    return badRequest({
+      formError: `Form not submitted correctly.`,
+    });
   }
-  const fields = { loginType, username, password };
 
+  const fields = { loginType, username, password };
   const fieldErrors = {
     username: validateUsername(username),
     password: validatePassword(password),
   };
-
-  if (Object.values(fieldErrors).some(Boolean)) {
+  if (Object.values(fieldErrors).some(Boolean))
     return badRequest({ fieldErrors, fields });
-  }
 
   switch (loginType) {
-    case "login":
-      // login to get the user
-      // if there's no user, return the fields and a formError
+    case "login": {
       const user = await login({ username, password });
-
       if (!user) {
         return badRequest({
           fields,
-          formError: `Username/Password combination incorrect`,
+          formError: `Username/Password combination is incorrect`,
         });
       }
-
-      // if there is a user, create their session and redirect to /jokes
       return createUserSession(user.id, redirectTo);
-
-    case "register":
-      const userExists = await db.user.findFirst({ where: { username } });
+    }
+    case "register": {
+      const userExists = await db.user.findFirst({
+        where: { username },
+      });
       if (userExists) {
         return badRequest({
           fields,
-          formError: `User with username ${username} already exits`,
+          formError: `User with username ${username} already exists`,
         });
       }
-      // create the user
-      // create their session and redirect to /jokes
-      const newUser = await register({ username, password });
-
-      if (!newUser) {
+      const user = await register({ username, password });
+      if (!user) {
         return badRequest({
           fields,
-          formError: `Something went wrong with the user`,
+          formError: `Something went wrong trying to create a new user.`,
         });
       }
-
-      return createUserSession(newUser.id, redirectTo);
-    default:
-      return badRequest({ fields, formError: `Login type invalid` });
+      return createUserSession(user.id, redirectTo);
+    }
+    default: {
+      return badRequest({
+        fields,
+        formError: `Login type invalid`,
+      });
+    }
   }
 };
 
@@ -123,11 +119,11 @@ export default function Login() {
         <form method="post">
           <input
             type="hidden"
-            name="rediredTo"
+            name="redirectTo"
             value={searchParams.get("redirectTo") ?? undefined}
           />
           <fieldset>
-            <legend className="sr-only">Login or Register</legend>
+            <legend className="sr-only">Login or Register?</legend>
             <label>
               <input
                 type="radio"
@@ -175,10 +171,10 @@ export default function Login() {
           <div>
             <label htmlFor="password-input">Password</label>
             <input
-              type="password"
-              name="password"
               id="password-input"
+              name="password"
               defaultValue={actionData?.fields?.password}
+              type="password"
               aria-invalid={
                 Boolean(actionData?.fieldErrors?.password) || undefined
               }
@@ -187,7 +183,11 @@ export default function Login() {
               }
             />
             {actionData?.fieldErrors?.password ? (
-              <p className="form-validation-error" role="alert">
+              <p
+                className="form-validation-error"
+                role="alert"
+                id="password-error"
+              >
                 {actionData.fieldErrors.password}
               </p>
             ) : null}

@@ -1,4 +1,5 @@
-import { json, LinksFunction, LoaderFunction } from "@remix-run/node";
+import type { LinksFunction, LoaderFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Outlet, Link, useLoaderData } from "@remix-run/react";
 
 import { getUser } from "~/utils/session.server";
@@ -41,7 +42,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function JokesRoute() {
   const data = useLoaderData<LoaderData>();
-  console.log("data", data);
+
   return (
     <div className="jokes-layout">
       <header className="jokes-header">
